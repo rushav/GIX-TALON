@@ -1,0 +1,19 @@
+# Camera inventory. Nothing in code should hardcode a serial.
+model: OptiTrack Prime 13W
+resolution: [1280, 1024]
+frame_rate_hz: 120
+
+cameras:
+  - serial: 33277
+    status: active
+  - serial: 33659
+    status: active
+  - serial: 33661
+    status: active
+  - serial: 33663
+    status: active
+  - serial: 33275
+    status: excluded
+    reason: defocused, needs lens adjustment
+  - serial: 33272
+    status: available
