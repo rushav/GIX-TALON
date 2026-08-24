@@ -1,0 +1,23 @@
+# session data — lives in ~/panoptes-data, synced separately
+mocap/sessions
+*.raw
+*.npz
+*.bag
+
+# build
+build/
+*.o
+*.so
+CMakeCache.txt
+CMakeFiles/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# os / editor
+.DS_Store
+.vscode/
+.idea/
