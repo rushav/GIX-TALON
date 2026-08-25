@@ -1,5 +1,13 @@
 # Cameras
 
+This file is authoritative for **inventory and specifications**: which cameras
+exist, their serials and status, model specs, and network layout.
+
+For working settings, SDK behaviour and what has been measured on this
+hardware, see [../../mocap/docs/FINDINGS.md](../../mocap/docs/FINDINGS.md).
+For the commands to build and run the capture tooling, see
+[../../mocap/docs/RUNBOOK.md](../../mocap/docs/RUNBOOK.md).
+
 OptiTrack Prime 13W — **legacy Prime series, not PrimeX**.
 The Linux SDK docs only name X-series; legacy support is undocumented
 but verified working on this hardware.
@@ -11,6 +19,7 @@ but verified working on this hardware.
 | FOV         | 82 deg H x 70 deg V (ultra-wide)           |
 | Interface   | Gigabit Ethernet, PoE                      |
 | Illumination| 850 nm IR ring, SetIntensity 0-15          |
+| IR filter   | Switchable 850 nm bandpass                 |
 | Lens        | Manual focus, lockable ring                |
 
 ## Inventory
@@ -28,6 +37,10 @@ but verified working on this hardware.
 Refocus 33275 with a variance-of-Laplacian metric rather than judging
 sharpness by eye.
 
+Working settings for ChArUco calibration capture (filter in, ring at full) are
+recorded in [FINDINGS.md](../../mocap/docs/FINDINGS.md#2-the-ir-bandpass-filter-can-stay-in-for-charuco-capture),
+not here.
+
 ## Network
 
 Cameras self-assign link-local addresses and broadcast discovery on
@@ -35,3 +48,6 @@ UDP 13013. Host NIC `enp6s0` is link-local only and dedicated to the
 camera network; internet comes over Wi-Fi.
 
     sudo tcpdump -i enp6s0 -n port 13013   # confirm a camera is alive
+
+Discovery is staggered and can list a serial twice; see
+[FINDINGS.md](../../mocap/docs/FINDINGS.md#8-device-discovery-is-staggered-and-can-duplicate).

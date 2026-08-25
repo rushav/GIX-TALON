@@ -1,0 +1,92 @@
+# Settings for mocap/src/intrinsics_capture (stage 1: acquisition + live view).
+# Paths are relative to the repo root unless noted.
+
+board_config: charuco_board.yaml   # resolved relative to this file's directory
+session_root: mocap/sessions
+
+video:
+  # Live view / marker detection rate. Frames arrive at the camera rate and the
+  # queue is drained every iteration; this only paces what we detect and paint.
+  display_fps: 30
+
+# Verified working configuration for ChArUco capture on a Prime 13W at ~1-1.5 m.
+# 27/27 markers with the IR bandpass filter left IN, which means calibration
+# happens in the same optical configuration as tracking - no filter-removal
+# focal shift to account for. See mocap/docs/FINDINGS.md.
+defaults:
+  exposure: 8133
+  imager_gain: 7      # eImagerGain level, 0-7. Free at this exposure: static
+                      # corner jitter is 0.0540 px at gain 7 vs 0.0561 at gain 0.
+  ir_intensity: 15    # IR ring at full; the board is lit by the ring, not the room
+  frame_rate_hz: 30
+  ir_filter: true     # 850 nm IR bandpass IN - the operating configuration
+
+discovery:
+  # Enumeration is staggered: the SDK reports the first device long before the
+  # last one finishes initializing. Poll the device list and only accept it once
+  # the count has held steady for settle_ms.
+  poll_interval_ms: 250
+  settle_ms: 1500
+  timeout_ms: 12000
+
+# Used only when the SDK reports a degenerate range for a control, which can
+# happen on the undocumented legacy-Prime path. Queried values win when sane.
+# Note the exposure entry is a floor, not the real ceiling: the SDK re-reports
+# its exposure range on every frame rate change (see exposure: below).
+control_ranges_fallback:
+  exposure: [1, 6000]
+  imager_gain: [0, 7]
+  ir_intensity: [0, 15]
+  frame_rate_hz: [30, 120]
+
+exposure:
+  # The SDK re-reports MinimumExposureValue()/MaximumExposureValue() after every
+  # SetFrameRate(), and the maximum tracks the frame period exactly. Measured on
+  # 33661: 240 Hz -> 3966, 120 Hz -> 8133, 60 Hz -> 16466, 30 Hz -> 33133, i.e.
+  # floor(1e6 / fps) - 200. So the slider bounds are re-read on every frame rate
+  # change and the SDK-reported maximum is what the advisory quotes. Exposure
+  # units are microseconds.
+  refresh_range_on_frame_rate_change: true
+
+coverage:
+  # The frame is divided into this grid and each accepted ChArUco corner is
+  # assigned to a cell. Empty cells mean the distortion model is extrapolating
+  # there rather than being measured - RMS will not tell you, because RMS only
+  # measures error where data exists.
+  grid_cols: 5
+  grid_rows: 6
+  target_per_cell: 20   # corners at which a cell counts as fully covered
+
+pose:
+  # Rough intrinsics for the solvePnP tilt estimate. Only needs to be close -
+  # it is used to rank views by tilt, not to calibrate.
+  guess_fx: 780.0
+  guess_fy: 780.0
+  guess_cx: 640.0
+  guess_cy: 512.0
+  # All-fronto-parallel views make focal length and distance mutually
+  # ambiguous; the symptom is fx drifting away from fy.
+  min_tilt_degrees: 20
+  min_fraction_tilted: 0.30
+  histogram_bin_degrees: 5
+  histogram_bins: 12
+
+solver:
+  # OpenCV 5.x lives in the venv because it cannot coexist with the system
+  # OpenCV 4.6 this tool links against.
+  python: .venv/bin/python
+  script: mocap/python/solve_intrinsics.py
+  min_corners: 6
+  timeout_seconds: 300
+
+# Context for reading a result, NOT pass/fail thresholds. These are the ranges
+# the previous rig settled into; a value outside them is worth a look, not a
+# failure.
+reference:
+  rms_px: [0.32, 0.39]
+  focal_px: [778, 786]
+  focal_agreement_percent: 1.0
+  cx_px: [627, 637]
+  cy_px: [516, 521]
+  nominal_cx: 640
+  nominal_cy: 512
